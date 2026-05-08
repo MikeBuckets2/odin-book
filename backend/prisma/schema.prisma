@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  email          String   @unique
+  password       String
+  bio            String?
+  profilePicture String?
+  isGuest        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  posts    Post[]
+  comments Comment[]
+  likes    Like[]
+
+  following Follow[] @relation("follower")
+  followers Follow[] @relation("following")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  imageUrl  String?
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id     String @id @default(cuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Follow {
+  id          String       @id @default(cuid())
+  followerId  String
+  followingId String
+  status      FollowStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
